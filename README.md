@@ -62,7 +62,7 @@ workflow, where the output of one function serves as the input for the
 next. This allows for a comprehensive analysis, from initial clustering
 to final visualization.
 
-<img src="./man/figures/workflow.svg" alt="" width="100%" style="display: block; margin: auto;" />
+<img src="./man/figures/workflow_v2.svg" alt="" width="100%" style="display: block; margin: auto;" />
 
 A typical workflow involves these steps:
 

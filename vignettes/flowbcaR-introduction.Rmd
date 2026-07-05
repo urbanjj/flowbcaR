@@ -117,10 +117,10 @@ digraph flowbcaR_flow {
 }
 ")
 diagram_svg <- export_svg(diagram)
-writeLines(diagram_svg, "workflow.svg")
+writeLines(diagram_svg, "workflow_v2.svg")
 ```
 ```{r workflow_plot, echo=FALSE, out.width="100%", fig.align = 'center'}
-knitr::include_graphics("../man/figures/workflow.svg")
+knitr::include_graphics("../man/figures/workflow_v2.svg")
 ```
 
 A typical workflow involves these steps:
