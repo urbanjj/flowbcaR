@@ -1,6 +1,6 @@
 Package: flowbcaR
 Title: Flow-based Clustering Algorithm
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: 
     person("jongjin", "Yun", , "jongjin@uos.ac.kr", role = c("aut", "cre"))
 Description: This package provides an R implementation of the flow-based clustering algorithm originally introduced by Meekes and Hassink (2018), extended and refined by Yun (2025). 
