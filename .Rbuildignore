@@ -1,4 +1,7 @@
 ^README\.Rmd$
+^README\.md$
+^README_cache$
+^Rplots\.pdf$
 ^LICENSE\.md$
 ^doc$
 ^Meta$

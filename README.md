@@ -1,6 +1,6 @@
 # Introduction to flowbcaR
 
-### *Jongjin Yun (2025-08-02)*
+### *Jongjin Yun (2026-07-05)*
 
 The `flowbcaR` package provides a robust implementation of a flow-based
 clustering algorithm, originally developed by Meekes and Hassink (2018)
@@ -55,7 +55,7 @@ The core idea is as follows:
     flows for the new, larger clusters, until only one cluster remains
     or a user-defined stopping condition is met.
 
-## Analysis Workflow (need to update)
+## Analysis Workflow
 
 The functions in `flowbcaR` are designed to be used in a sequential
 workflow, where the output of one function serves as the input for the
@@ -68,21 +68,28 @@ A typical workflow involves these steps:
 
 1.  **`flowbca()`**: The core function that performs hierarchical
     clustering on the flow data.
-2.  **`build_hierarchy()`**: Creates a textual representation of the
-    cluster hierarchy, showing how individual units are merged.
-3.  **`flowbca_stat()` & `flowbca_plot()`**: Calculate and visualize
+2.  **`flowbca_stat()` & `flowbca_plot()`**: Calculate and visualize
     basic statistics (e.g., internal flow ratios) to help assess cluster
     cohesion at each step.
-4.  **`flowbca_modularity()`**: Computes network modularity, an advanced
+3.  **`flowbca_modularity()`**: Computes network modularity, an advanced
     metric used to assess the quality of clusters at each step, and to
     facilitate comparison with other network clustering algorithms.
-5.  **`flowbca_diagnosis()`**: Provides a diagnostic dashboard and
+4.  **`flowbca_diagnosis()`**: Provides a diagnostic dashboard and
     statistical outputs to compare clustering strategies based on
     relative and absolute flows, using metrics from `flowbca_stat` and
     `flowbca_modularity`.
-6.  **`flowbca_gis()` & `flowbca_ani()`**: Generate spatial
-    visualizations, creating maps of the clusters at different stages
-    and animating the entire merging process.
+5.  **`build_hierarchy()`**: Creates a textual representation of the
+    cluster hierarchy, showing how individual units are merged.
+6.  **`build_cluster_tree()` & `build_dendrogram()`**: Convert the merge
+    history into a nested-list tree and an R `dendrogram` object for
+    structural analysis.
+7.  **`hierarchy_cluster()`**: Slices the cluster hierarchy level by
+    level, returning the cluster membership and parent-child
+    relationships at each hierarchical level.
+8.  **`flowbca_gis_layer()`, `flowbca_map()` & `flowbca_ani()`**:
+    Generate spatial visualizations, creating dissolved cluster layers
+    for each step, a static map of the final clusters, and an animation
+    of the entire merging process.
 
 ## Sample Data
 
@@ -162,13 +169,15 @@ and `non_zero`—that are not available in flowbca.ado.
         -   `opt_f = 4`: undirected absolute flows approach.
     -   Provides multiple stopping conditions (`q`, `k`, `la`, `lw`,
         `lm`, `smaller`, `non_zero`) for fine-grained control over the
-        clustering process.
+        clustering process. Only one stopping condition can be specified
+        at a time; if none is specified, the algorithm runs until a
+        single cluster remains (`k = 1`).
         -   `q`: The minimum flow threshold for merging clusters. A
             relative threshold is specified as a ratio, and an absolute
             threshold is specified as an integer. If the specified
             threshold is greater than the maximum value in the entire
             flow data, the algorithm’s stopping condition is met, and
-            the procedure terminates. The default is `q = 0`.
+            the procedure terminates.
         -   `k`: The target number of clusters.
         -   `la`: the minimum average of the internal relative flows.
         -   `lw`: the minimum weighted average of the internal relative
@@ -206,7 +215,7 @@ and `non_zero`—that are not available in flowbca.ado.
     #>  $ destinationunit: chr  "Daegu" "Daejeon" "Daegu" "Daegu" ...
     #>  $ clusterid      : chr  "Daegu" "Daejeon" "Daegu" "Daegu" ...
     #>  $ g              : num  0.775 0.761 0.753 0.752 0.738 ...
-    #>  $ round          : int  159 158 157 156 155 154 153 152 151 150 ...
+    #>  $ round          : num  158 157 156 155 154 153 152 151 150 149 ...
     #>  $ core           : num  0 0 0 0 0 0 0 0 0 0 ...
     str(bca_result$cluster_set, 3)
     #> 'data.frame':    13 obs. of  8 variables:
@@ -261,7 +270,7 @@ the clusters changes.
     stat_data <- flowbca_stat(bca_result$F_matrix_history)
     str(stat_data)
     #> 'data.frame':    147 obs. of  7 variables:
-    #>  $ round           : num  160 159 158 157 156 155 154 153 152 151 ...
+    #>  $ round           : num  159 158 157 156 155 154 153 152 151 150 ...
     #>  $ mean            : num  0 0.00333 0.00429 0.00468 0.00495 ...
     #>  $ min             : num  0 0 0 0 0 0 0 0 0 0 ...
     #>  $ median          : num  0 0 0 0 0 0 0 0 0 0 ...
@@ -273,7 +282,7 @@ the clusters changes.
     # The plot is interactive when the number of points is small (<= 20)
     flowbca_plot(stat_data)
 
-<img src="man/figures/README-stat_plot-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-stat-plot-example-1.png" width="90%" style="display: block; margin: auto;" />
 
 -   **Considerations**
     -   These plots are diagnostic tools. There is no single “correct”
@@ -295,6 +304,7 @@ W\_{ij} - \frac{s\_i^{\text{out}} s\_j^{\text{in}}}{W} \right) \delta(C\_i, C\_j
 $$
 
 -   Where:
+
     -   *W*<sub>*i**j*</sub> is the weight of the directed edge from
         node *i* to node *j*.
     -   *s*<sub>*i*</sub><sup>*o**u**t*</sup> = ∑<sub>*j*</sub>*W*<sub>*i**j*</sub>
@@ -308,25 +318,28 @@ $$
     -   *δ*(*C*<sub>*i*</sub>, *C*<sub>*j*</sub>) is the Kronecker
         delta, which is 1 if *C*<sub>*i*</sub> = *C*<sub>*j*</sub> and 0
         otherwise.
+
 -   **Features**:
+
     -   Implements the standard modularity formula for directed
         networks.
     -   Higher modularity values (typically in the range of 0.3 to 0.7)
         indicate a strong community structure, where flows are dense
         within clusters but sparse between them.
+
 -   **Usage**:
 
 <!-- -->
 
     # Calculate modularity for each round
-    modularity_data <- flowbca_modularity(bca_result$unit_set, bca_result$F_matrix_history)
+    modularity_data <- flowbca_modularity(bca_result$unit_set, bca_result$F_matrix_history, resolution=1)
 
     # Plot modularity over rounds
     plot(modularity_data$round, modularity_data$modularity, type='l',
             xlab="Round", ylab="Modularity", main="Modularity vs. Clustering Step",
             xlim=rev(range(as.integer(modularity_data$round))))
 
-<img src="man/figures/modularity-example-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="man/figures/README-modularity-example-1.png" width="60%" style="display: block; margin: auto;" />
 
 -   **Pros**
     -   Modularity is a widely accepted standard for evaluating
@@ -361,13 +374,13 @@ clustering strategies based on relative and absolute flows side by side.
     #> Stopping: The number of units in the F_matrix is less than k.
     #> Stopping: The number of units in the F_matrix is less than k.
 
-<img src="man/figures/diagnosis-example-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-diagnosis-example-1.png" width="90%" style="display: block; margin: auto;" />
 
     # The function returns the statistics used for plotting
     str(diagnosis_stat)
     #> List of 2
     #>  $ relative:'data.frame':    158 obs. of  10 variables:
-    #>   ..$ round           : num [1:158] 2 3 4 5 6 7 8 9 10 11 ...
+    #>   ..$ round           : num [1:158] 1 2 3 4 5 6 7 8 9 10 ...
     #>   ..$ mean            : num [1:158] 1 0.928 0.893 0.884 0.837 ...
     #>   ..$ min             : num [1:158] 1 0.868 0.824 0.824 0.691 ...
     #>   ..$ median          : num [1:158] 1 0.928 0.868 0.865 0.824 ...
@@ -378,7 +391,7 @@ clustering strategies based on relative and absolute flows side by side.
     #>   ..$ g               : num [1:158] 0.1317 0.0893 0.1066 0.1467 0.1487 ...
     #>   ..$ relative_g      : num [1:158] 0.1419 0.0962 0.1149 0.158 0.1602 ...
     #>  $ absolute:'data.frame':    158 obs. of  10 variables:
-    #>   ..$ round           : num [1:158] 2 3 4 5 6 7 8 9 10 11 ...
+    #>   ..$ round           : num [1:158] 1 2 3 4 5 6 7 8 9 10 ...
     #>   ..$ mean            : num [1:158] 1 0.5 0.333 0.25 0.2 ...
     #>   ..$ min             : num [1:158] 1 0 0 0 0 0 0 0 0 0 ...
     #>   ..$ median          : num [1:158] 1 0.5 0 0 0 ...
@@ -398,7 +411,7 @@ clustering strategies based on relative and absolute flows side by side.
         clusters. The “Significant Modularity” zone (0.3-0.7) is
         highlighted to guide interpretation.
 
-## Hierarchy Functions (need to update for `build_cluster_tree` and `hierarchy_cluster`)
+## Hierarchy Functions
 
 Once a final clustering is performed, these functions help analyze and
 organize the resulting hierarchical structure.
@@ -485,9 +498,131 @@ and flags which units act as parents.
     #> 13  ¦   °--Tongyeong            
     #> 14  °--Goseong(Gyeongsangnam-do)
 
+### `build_cluster_tree()`
+
+Converts the flat parent-child merge history in `unit_set` into a named,
+nested list (tree). Each name is a node, and its value is a list of its
+children; leaf nodes are empty lists. This tree is the common building
+block for `build_dendrogram()` and `hierarchy_cluster()`, and it can
+also be inspected directly with base R tools.
+
+-   **Features**:
+    -   Requires no additional packages; the result is a plain nested
+        list.
+    -   Top-level names of the list correspond to the final clusters
+        (roots of the hierarchy).
+-   **Usage**:
+
+<!-- -->
+
+    # Build the nested-list tree from the merge history
+    cluster_tree <- build_cluster_tree(bca_result$unit_set)
+
+    # The top-level nodes are the final clusters
+    names(cluster_tree)
+    #>  [1] "Andong"     "Busan"      "Cheongsong" "Daegu"      "Daejeon"   
+    #>  [6] "Gwangju"    "Jeonju"     "Jinju"      "Mokpo"      "Sangju"    
+    #> [11] "Seoul"      "Suncheon"   "Yeongju"
+
+    # Inspect the sub-tree for Busan (two levels deep)
+    str(cluster_tree$Busan, max.level = 2)
+    #> List of 10
+    #>  $ Busan                    : list()
+    #>  $ Changnyeong              : list()
+    #>  $ Changwon                 :List of 3
+    #>   ..$ Changwon: list()
+    #>   ..$ Haman   : list()
+    #>   ..$ Uiryeong: list()
+    #>  $ Geoje                    :List of 2
+    #>   ..$ Geoje    : list()
+    #>   ..$ Tongyeong: list()
+    #>  $ Gimhae                   : list()
+    #>  $ Goseong(Gyeongsangnam-do): list()
+    #>  $ Gyeongju                 :List of 2
+    #>   ..$ Gyeongju: list()
+    #>   ..$ Pohang  : list()
+    #>  $ Miryang                  : list()
+    #>  $ Ulsan                    : list()
+    #>  $ Yangsan                  : list()
+
+### `build_dendrogram()`
+
+Converts the cluster hierarchy into a base R `dendrogram` object, with
+each branch labelled by the name of its cluster core. This makes the
+full ecosystem of dendrogram tools (`plot()`, `cut()`, `labels()`, …)
+available for exploring the cluster structure.
+
+-   **Features**:
+    -   Returns a standard `stats::dendrogram` object; no extra
+        dependencies.
+    -   Branch heights correspond to hierarchy depth, so `cut()` can
+        slice the tree at a given level.
+-   **Usage**:
+
+<!-- -->
+
+    # Build the dendrogram from the merge history
+    dend <- build_dendrogram(bca_result$unit_set)
+    attributes(dend)[c("members", "height")]
+    #> $members
+    #> [1] 159
+    #> 
+    #> $height
+    #> [1] 3
+
+    # Each top-level branch is a final cluster; plot the sub-dendrogram for Busan
+    busan_dend <- dend[[which(sapply(dend, attr, "label") == "Busan")]]
+    par(mar = c(9, 4, 3, 1))
+    plot(busan_dend, main = "Busan cluster hierarchy")
+
+<img src="man/figures/README-dendrogram-example-1.png" width="90%" style="display: block; margin: auto;" />
+
+### `hierarchy_cluster()`
+
+Slices the cluster hierarchy level by level. For each hierarchical level
+it returns the cluster membership of every basic unit, flags “core”
+clusters (clusters with more than one member), and records the
+parent-child relationships between clusters across adjacent levels.
+
+-   **Features**:
+    -   `unit_set`: one data frame per hierarchy level, mapping each
+        `sourceunit` to its cluster (`h_cl`) at that level, with
+        `core`/`core_N` flags.
+    -   `cluster_info`: one data frame per level, linking each cluster
+        (`h_cl`) to its parent cluster at the level above
+        (`upper_h_cl`).
+    -   The level-specific `unit_set` data frames can be passed directly
+        to `flowbca_map()` to map the clusters of any hierarchy level.
+-   **Usage**:
+
+<!-- -->
+
+    # Analyze the hierarchy level by level
+    hc <- hierarchy_cluster(bca_result$unit_set)
+
+    # Cluster membership at the top hierarchy level
+    head(hc$unit_set$hierarchy_1)
+    #>   sourceunit   h_cl core_N core
+    #> 1     Andong Andong      2    1
+    #> 2      Ansan  Seoul      0    0
+    #> 3    Anseong  Seoul      0    0
+    #> 4     Anyang  Seoul      0    0
+    #> 5       Asan  Seoul      0    0
+    #> 6      Boeun  Seoul      0    0
+
+    # Parent-child relationships at the second level
+    head(hc$cluster_info$hierarchy_2)
+    #>    sourceunit     h_cl upper_h_cl
+    #> 5    Changwon Changwon      Busan
+    #> 6       Haman Changwon      Busan
+    #> 7    Uiryeong Changwon      Busan
+    #> 8       Geoje    Geoje      Busan
+    #> 9   Tongyeong    Geoje      Busan
+    #> 12   Gyeongju Gyeongju      Busan
+
 ------------------------------------------------------------------------
 
-## Visualization Functions (need to update `flowbca_map`)
+## Visualization Functions
 
 These functions are dedicated to creating geographical and graphical
 representations of the clustering results.
@@ -519,16 +654,56 @@ dissolved clusters at that step.
 
     # Plot the spatial clusters at different rounds
     par(mfrow = c(2, 2), mar = c(0.1, 0.1, 1.5, 0.1))
-    plot(gis_layers$`160`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 160 (Initial)")
+    plot(gis_layers$`159`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 159 (Initial)")
     plot(gis_layers$`100`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 100")
     plot(gis_layers$`50`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 50")
-    plot(gis_layers$`14`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 14 (Final)")
+    plot(gis_layers$`13`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 13 (Final)")
 
-<img src="man/figures/gis-example-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-gis-example-1.png" width="90%" style="display: block; margin: auto;" />
 
 -   **Considerations**
     -   The process can be slow if the polygons are very complex or if
         there are many units and merge steps.
+
+### `flowbca_map()`
+
+Creates a static map of the final clusters. The cluster polygons are
+dissolved and drawn with translucent colors on top of the original unit
+boundaries, and the core unit of each cluster is marked with a blue
+triangle at its centroid. The map is written to a PNG file and returned
+as a `magick` image together with the underlying `sf` layers.
+
+-   **Features**:
+    -   Accepts either the `unit_set` from a `flowbca` result (using the
+        `clusterid` and `core` columns) or a level-specific data frame
+        from `hierarchy_cluster()` (using the `h_cl` and `core`
+        columns), so clusters at any hierarchy level can be mapped.
+    -   Returns a list with the `magick` image (`img`), the dissolved
+        cluster polygons (`cluster_gis`), and the core unit polygons
+        (`core_gis`) for further use.
+    -   Uses `ragg` for faster, higher-quality PNG rendering when
+        available.
+-   **Usage**:
+
+<!-- -->
+
+    # Map the final clusters and mark the core units
+    map_result <- flowbca_map(bca_result$unit_set, KR_SiGun,
+                              join_col = c('sourceunit' = 'SiGun_NM'),
+                              file_nm = 'man/figures/flowbca_map.png', width = 800)
+
+<img src="man/figures/README-map-example-1.png" width="70%" style="display: block; margin: auto;" />
+
+
+    # The returned list contains the image and the sf layers
+    names(map_result)
+    #> [1] "img"         "cluster_gis" "core_gis"
+
+-   **Considerations**
+    -   Cluster colors are sampled randomly at each call, so the
+        coloring changes between runs.
+    -   The output file name must have a `.png` extension; by default it
+        is derived from the name of the `unit_set` object.
 
 ### `flowbca_ani()`
 
@@ -536,8 +711,8 @@ Creates a GIF animation to visualize the dynamic process of spatial
 clustering.
 
 -   **Features**:
-    -   Takes the output of `flowbca_gis` and `unit_set` to create an
-        animated sequence of maps.
+    -   Takes the output of `flowbca_gis_layer` and `unit_set` to create
+        an animated sequence of maps.
     -   Highlights the merging clusters at each step.
 -   **Usage** (example is not run in vignette build):
 
@@ -547,9 +722,9 @@ clustering.
     # It will create a file named "flowbca_clustering.gif" in your working directory.
 
     flowbca_ani(
-        flowbca_gis = gis_layers,
+        flowbca_gis_layer = gis_layers,
         unit_set = bca_result$unit_set,
-        filenm = "flowbca_clustering.gif",
+        file_nm = "flowbca_clustering.gif",
         width = 800
     )
 
@@ -598,10 +773,11 @@ understand its advantages and limitations.
     research questions.
 
 5.  **Powerful Visualization**: The package seamlessly integrates
-    clustering results with spatial data. `flowbca_gis()` makes it easy
-    to map the resulting regions, and `flowbca_ani()` provides a
-    compelling, dynamic visualization of the clustering process, which
-    is invaluable for communication and exploratory analysis.
+    clustering results with spatial data. `flowbca_gis_layer()` and
+    `flowbca_map()` make it easy to map the resulting regions, and
+    `flowbca_ani()` provides a compelling, dynamic visualization of the
+    clustering process, which is invaluable for communication and
+    exploratory analysis.
 
 ### Cons
 
@@ -624,8 +800,9 @@ understand its advantages and limitations.
 
 4.  **Computational Cost**: For very large datasets (e.g., thousands of
     spatial units), the iterative matrix calculations in `flowbca()`,
-    `flowbca_modularity` and the geometric operations in `flowbca_gis()`
-    can be computationally intensive and time-consuming.
+    `flowbca_modularity` and the geometric operations in
+    `flowbca_gis_layer()` can be computationally intensive and
+    time-consuming.
 
 ## References
 
