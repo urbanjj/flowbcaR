@@ -194,8 +194,10 @@ flowbca_plot <- function(stat_data, upper_bound = NULL) {
 #'
 #' @param plot_df A data frame containing the columns `round`, `intra_flow_ratio`, and `inter_flow_ratio`.
 #' @return A list containing the `round` and `ratio` of the intersection point, or `NULL` if no intersection is found.
+#' @noRd
 find_intersection <- function(plot_df) {
-  for (i in 1:(nrow(plot_df) - 1)) {
+  if (nrow(plot_df) < 2) return(NULL)
+  for (i in seq_len(nrow(plot_df) - 1)) {
     p1_intra <- plot_df$intra_flow_ratio[i]
     p2_intra <- plot_df$intra_flow_ratio[i+1]
     p1_inter <- plot_df$inter_flow_ratio[i]

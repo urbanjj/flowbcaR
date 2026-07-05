@@ -5,8 +5,8 @@
 #' @param unit_set A data frame from the `flowbca` result. Must contain `h_parent` and `h_level` from `build_hierarchy()`.
 #' @param unit_gis An `sf` object with polygons corresponding to the units.
 #' @param join_col Specifies the join key columns.
-#' @param file_nm The file name for the output GIF. "The default value is set to
-#'   the name of unit_set, but the user can specify it (e.g., flowbca_map.png)."
+#' @param file_nm The file name for the output PNG. The default value is set to
+#'   the name of unit_set, but the user can specify it (e.g., flowbca_map.png).
 #' @param width The width of the output image in pixels.
 #' @return A list of `sf` objects for the clusters and core units.
 #' @importFrom grDevices adjustcolor colors dev.off png
@@ -70,34 +70,33 @@ flowbca_map <- function(unit_set, unit_gis, join_col = "sourceunit", file_nm = N
   lwd_scaler <- 0.0005 * width + 0.5
 
   # --- Data Preparation ---
-  merged_gis <- merge(unit_gis, unit_set[,c('sourceunit','clusterid','core')], by.x = unit_gis_id_col, by.y = unit_set_id_col, all.x = TRUE)
+  merged_gis <- merge(unit_gis, unit_set, by.x = unit_gis_id_col, by.y = unit_set_id_col, all.x = TRUE)
   union_gis <- aggregate(merged_gis, by = list(clusterid = merged_gis$clusterid), FUN = function(x) x[1])
   cluster_gis <- remove_holes_sf(union_gis)[,c('clusterid')]
   core_gis <- unit_gis[unit_gis[[unit_gis_id_col]] %in% unit_set[unit_set$core==1,][[unit_set_id_col]],]
   core_gis_point <- sf::st_centroid(core_gis)
   core_gis_point_xy <- sf::st_coordinates(core_gis_point)
-  g_colour <- grDevices::adjustcolor(sample(grDevices::colors(), length(cluster_gis$geometry)), alpha.f = 0.5)
+  n_clusters <- nrow(cluster_gis)
+  g_colour <- grDevices::adjustcolor(
+    sample(grDevices::colors(), n_clusters, replace = n_clusters > length(grDevices::colors())),
+    alpha.f = 0.5)
 
   # --- Device Handling ---
-  if (!is.null(file_nm)) {
-    if (use_ragg) {
-      ragg::agg_png(file_nm, width = png_width, height = png_height)
-    } else {
-      grDevices::png(file_nm, width = png_width, height = png_height)
-    }
+  if (use_ragg) {
+    ragg::agg_png(file_nm, width = png_width, height = png_height)
+  } else {
+    grDevices::png(file_nm, width = png_width, height = png_height)
   }
 
   # --- Plotting ---
   graphics::par(mar = c(0, 0, 0, 0))
-  plot(unit_gis$geom, col = 'white', lwd = 1 * lwd_scaler, border='grey50')
-  plot(core_gis$geom, col = NA, lwd = 1 * lwd_scaler, add = TRUE, border = 'blue')
-  plot(cluster_gis$geom, col = g_colour, lwd = 1.25 * lwd_scaler, add = TRUE)
+  plot(sf::st_geometry(unit_gis), col = 'white', lwd = 1 * lwd_scaler, border='grey50')
+  plot(sf::st_geometry(core_gis), col = NA, lwd = 1 * lwd_scaler, add = TRUE, border = 'blue')
+  plot(sf::st_geometry(cluster_gis), col = g_colour, lwd = 1.25 * lwd_scaler, add = TRUE)
   graphics::points(core_gis_point_xy[,1],core_gis_point_xy[,2], type = 'p', pch = 17, col = 'blue', cex = 2 * cex_scaler)
 
-  if (!is.null(file_nm)) {
-    grDevices::dev.off()
-  }
-  
+  grDevices::dev.off()
+
   img <- magick::image_read(file_nm)
   plot(img)
 

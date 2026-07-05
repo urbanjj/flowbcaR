@@ -6,6 +6,7 @@
 #' @param start_node The node to start the traversal from.
 #' @param cluster_map A named vector where names are children and values are parents.
 #' @return A string representing the full path.
+#' @noRd
 find_hierarchy <- function(start_node, cluster_map) {
   path <- c(start_node)
   current_node <- start_node
@@ -55,7 +56,6 @@ build_hierarchy <- function(data, child_col = "sourceunit", parent_col = "destin
   # Create the parent-child map from the data frame
   valid_links <- data[!is.na(data[[parent_col]]), ]
   cluster_map <- setNames(valid_links[[parent_col]], valid_links[[child_col]])
-  clusterid <- unique(data$clusterid)
 
   # Use sapply to apply the find_hierarchy function to each child unit
   data$hierarchy <- sapply(data[[child_col]], find_hierarchy, cluster_map = cluster_map)
@@ -80,7 +80,7 @@ build_hierarchy <- function(data, child_col = "sourceunit", parent_col = "destin
 #' @param unit_set A data frame, typically the `unit_set` from a `build_hierarchy` result.
 #' @return A named, nested list representing the cluster hierarchy. Each name is a
 #'   node, and its value is a list of its children. Leaf nodes are empty lists.
-#' @noRd
+#' @export
 #' @examples
 #' \dontrun{
 #'   # Assuming 'bca_result' is the output from flowbca()
@@ -90,7 +90,6 @@ build_hierarchy <- function(data, child_col = "sourceunit", parent_col = "destin
 #'   # Access a specific sub-tree
 #'   seoul_cluster <- tree$Seoul
 #' }
-
 build_cluster_tree <- function(unit_set) {
 
   # 1. Create a simple, reliable adjacency list (parent -> vector of children)
@@ -249,8 +248,12 @@ hierarchy_cluster <- function(unit_set){
     multi_member_clusters <- names(h_cl_counts[h_cl_counts > 1])
     df <- temp_df[temp_df$h_cl %in% multi_member_clusters, ]
 
-    # The get_parent_node function is assumed to be defined in the package environment.
-    p1 <- unlist(lapply(df$h_cl, function(x) get_parent_node(nested_list, x)))
+    # Top-level clusters have no parent: get_parent_node() returns NULL there,
+    # which must map to NA (unlist() would silently drop NULLs and misalign p1).
+    p1 <- vapply(df$h_cl, function(x) {
+      p <- get_parent_node(nested_list, x)
+      if (is.null(p)) NA_character_ else p
+    }, character(1), USE.NAMES = FALSE)
     cluster_info[[i]] <- cbind(df, upper_h_cl=NA)
     cluster_info[[i]]$upper_h_cl <- p1
 
@@ -277,242 +280,3 @@ hierarchy_cluster <- function(unit_set){
   names(hierarchy_cluster) <- c('unit_set','cluster_info')
   return(hierarchy_cluster)
 }
-
-# #' Extract and Organize Clusters at a Specific Hierarchy Level
-# #'
-# #' This function identifies clusters at a given hierarchy level and organizes them
-# #' based on their parent-child relationships. For a specified level, it returns
-# #' a list where each element corresponds to a cluster.
-# #'
-# #' If a node at the specified level is a child of a node from the level above,
-# #' the parent node's cluster is returned with the child node's members excluded.
-# #' The child node itself is returned as a separate cluster including all its members.
-# #'
-# #' @param unit_set A data frame from a `flowbca` result, which must contain
-# #'   `sourceunit` and `destinationunit` columns to define the hierarchy.
-# #' @param hierarchy An integer specifying the hierarchy level to analyze (must be >= 1).
-# #'   Defaults to 1.
-# #' @return A named list of character vectors. Each name is the root of a cluster,
-# #'   and the value is a vector of units belonging to that cluster, adjusted for
-# #'   sub-cluster relationships.
-# #' @export
-# #' @examples
-# #' \dontrun{
-# #'   # Assuming 'bca_result' is the output from flowbca()
-# #'   # Get clusters at level 2
-# #'   clusters_level_2 <- cluster_hierarchy(bca_result$unit_set, hierarchy = 2L)
-# #'
-# #'   # This will return a list where, for example, a parent cluster like 'Seoul'
-# #'   # might appear, but with members of its sub-cluster at level 2 (e.g., 'Incheon')
-# #'   # removed. 'Incheon' would then be a separate item in the list with its own members.
-# #' }
-# cluster_hierarchy <- function(unit_set, hierarchy = 2L) {
-#   hierarchy <- as.integer(hierarchy)
-#   if (!is.data.frame(unit_set) || !all(c("h_parent", "h_level") %in% names(unit_set))) {
-#     stop("unit_set must be a data frame with 'sourceunit' and 'destinationunit' columns.")
-#   }
-#   if (!is.integer(hierarchy) || hierarchy < 1 || hierarchy > max(unit_set$h_level)-1) {
-#     stop("hierarchy must be an integer between 1 and max of h_level.")
-#   }
-
-#   # 1. Build hierarchy data and identify nodes at the target and parent levels
-#   cluster_tree <- build_cluster_tree(unit_set)
-  
-#   if(hierarchy == 1){
-#     hchy_1_nm <- unit_set$sourceunit[unit_set$h_parent==1 & unit_set$h_level==hierarchy]
-#     hchy_1_des <- lapply(as.list(hchy_1_nm), \(x) get_descendants_self(x, cluster_tree))
-#     names(hchy_1_des) <- hchy_1_nm
-#     return(hchy_1_des)
-#   }
-  
-#   if(hierarchy > 1){
-#     hchy_up_nm <- unit_set$sourceunit[unit_set$h_parent==1 & unit_set$h_level==(hierarchy-1)]
-#     hchy_down_nm <- unit_set$sourceunit[unit_set$h_parent==1 & unit_set$h_level==hierarchy]
-    
-#     hchy_up_parent <- lapply(as.list(hchy_up_nm), \(x) get_parent_node(cluster_tree,x))
-#     hchy_up_des <- Map(\(x,y) get_descendants_self(x,cluster_tree[[y]]), as.list(hchy_up_nm), hchy_up_parent)
-#     hchy_up_des_exclude <- lapply(as.list(hchy_up_nm),\(x) c(x,exclude_descendants(cluster_tree[[x]], hchy_down_nm)))
-#     names(hchy_up_des_exclude) <- hchy_up_nm
-
-#     hchy_down_parent <- lapply(as.list(hchy_down_nm), \(x) get_parent_node(cluster_tree,x))
-#     hchy_down_des <- Map(\(x,y) get_descendants_self(x,cluster_tree[[y]]), as.list(hchy_down_nm), hchy_down_parent)
-#     names(hchy_down_des) <- hchy_down_nm
-    
-#     cluster_hierarchy <- list('root_exclude'=hchy_up_des_exclude, 'sub'=hchy_down_des)
-#     return(cluster_hierarchy)
-#   }
-# }
-
-
-# #' Get All Descendants from a Nested List (Helper)
-# #'
-# #' Recursively traverses a nested list (tree) structure to find all child nodes
-# #' (descendants) starting from a given node.
-# #'
-# #' @param node A list representing the current node in the hierarchy tree.
-# #' @return A character vector containing the names of all descendant nodes.
-# #' @noRd
-# get_all_descendants_nested <- function(node) {
-#   if (length(node) == 0) {
-#     return(character(0))
-#   }
-#   result <- character(0)
-#   for (child_name in names(node)) {
-#     result <- c(result, child_name, get_all_descendants_nested(node[[child_name]]))
-#   }
-#   result
-# }
-
-
-# #' Get a Node and All Its Descendants (Helper)
-# #'
-# #' A wrapper function that returns the starting node itself along with all of its
-# #' descendants by calling `get_all_descendants_nested`.
-# #'
-# #' @param node_name The name of the starting node (character).
-# #' @param node The full hierarchy tree (nested list) to search within.
-# #' @return A character vector containing the starting node and all its descendants.
-# #' @noRd
-# get_descendants_self <- function(node_name, node) {
-#   descendants <- get_all_descendants_nested(node[[node_name]])
-#   c(node_name,descendants)
-# }
-
-# #' Exclude Specific Descendant Trees from a Parent Node (Helper)
-# #'
-# #' From a given parent node's list of all descendants, this function removes
-# #' one or more specified child nodes and all of their own descendants.
-# #'
-# #' @param parent_node The parent node's sub-tree (a list).
-# #' @param exclude_nodes A character vector of child nodes to exclude.
-# #' @return A character vector of descendants of the parent, with the specified
-# #'   sub-trees removed.
-# #' @noRd
-# exclude_descendants <- function(parent_node, exclude_nodes) {
-#   all_descendants <- get_all_descendants_nested(parent_node)
-#   exclude_all <- unlist(lapply(exclude_nodes, function(n) get_descendants_self(n, parent_node)))
-#   setdiff(all_descendants, exclude_all)
-# }
-
-
-
-
-
-# #' Extract and Organize Clusters at a Specific Hierarchy Level
-# #'
-# #' This function identifies clusters at a given hierarchy level and organizes them
-# #' based on their parent-child relationships. For a specified level, it returns
-# #' a list where each element corresponds to a cluster.
-# #'
-# #' If a node at the specified level is a child of a node from the level above,
-# #' the parent node's cluster is returned with the child node's members excluded.
-# #' The child node itself is returned as a separate cluster including all its members.
-# #'
-# #' @param unit_set A data frame from a `flowbca` result, which must contain
-# #'   `sourceunit` and `destinationunit` columns to define the hierarchy.
-# #' @param hierarchy An integer specifying the hierarchy level to analyze (must be >= 1).
-# #'   Defaults to 1.
-# #' @return A named list of character vectors. Each name is the root of a cluster,
-# #'   and the value is a vector of units belonging to that cluster, adjusted for
-# #'   sub-cluster relationships.
-# #' @export
-# #' @examples
-# #' \dontrun{
-# #'   # Assuming 'bca_result' is the output from flowbca()
-# #'   # Get clusters at level 2
-# #'   clusters_level_2 <- cluster_hierarchy(bca_result$unit_set, hierarchy = 2L)
-# #'
-# #'   # This will return a list where, for example, a parent cluster like 'Seoul'
-# #'   # might appear, but with members of its sub-cluster at level 2 (e.g., 'Incheon')
-# #'   # removed. 'Incheon' would then be a separate item in the list with its own members.
-# #' }
-# cluster_hierarchy <- function(unit_set, hierarchy = 2L) {
-#   hierarchy <- as.integer(hierarchy)
-#   if (!is.data.frame(unit_set) || !all(c("h_parent", "h_level") %in% names(unit_set))) {
-#     stop("unit_set must be a data frame with 'sourceunit' and 'destinationunit' columns.")
-#   }
-#   if (!is.integer(hierarchy) || hierarchy < 1 || hierarchy > max(unit_set$h_level)-1) {
-#     stop("hierarchy must be an integer between 1 and max of h_level.")
-#   }
-
-#   # 1. Build hierarchy data and identify nodes at the target and parent levels
-#   cluster_tree <- build_cluster_tree(unit_set)
-  
-#   if(hierarchy == 1){
-#     hchy_1_nm <- unit_set$sourceunit[unit_set$h_parent==1 & unit_set$h_level==hierarchy]
-#     hchy_1_des <- lapply(as.list(hchy_1_nm), \(x) get_descendants_self(x, cluster_tree))
-#     names(hchy_1_des) <- hchy_1_nm
-#     return(hchy_1_des)
-#   }
-  
-#   if(hierarchy > 1){
-#     hchy_up_nm <- unit_set$sourceunit[unit_set$h_parent==1 & unit_set$h_level==(hierarchy-1)]
-#     hchy_down_nm <- unit_set$sourceunit[unit_set$h_parent==1 & unit_set$h_level==hierarchy]
-    
-#     hchy_up_parent <- lapply(as.list(hchy_up_nm), \(x) get_parent_node(cluster_tree,x))
-#     hchy_up_des <- Map(\(x,y) get_descendants_self(x,cluster_tree[[y]]), as.list(hchy_up_nm), hchy_up_parent)
-#     hchy_up_des_exclude <- lapply(as.list(hchy_up_nm),\(x) c(x,exclude_descendants(cluster_tree[[x]], hchy_down_nm)))
-#     names(hchy_up_des_exclude) <- hchy_up_nm
-
-#     hchy_down_parent <- lapply(as.list(hchy_down_nm), \(x) get_parent_node(cluster_tree,x))
-#     hchy_down_des <- Map(\(x,y) get_descendants_self(x,cluster_tree[[y]]), as.list(hchy_down_nm), hchy_down_parent)
-#     names(hchy_down_des) <- hchy_down_nm
-    
-#     cluster_hierarchy <- list('root_exclude'=hchy_up_des_exclude, 'sub'=hchy_down_des)
-#     return(cluster_hierarchy)
-#   }
-# }
-
-
-# #' Get All Descendants from a Nested List (Helper)
-# #'
-# #' Recursively traverses a nested list (tree) structure to find all child nodes
-# #' (descendants) starting from a given node.
-# #'
-# #' @param node A list representing the current node in the hierarchy tree.
-# #' @return A character vector containing the names of all descendant nodes.
-# #' @noRd
-# get_all_descendants_nested <- function(node) {
-#   if (length(node) == 0) {
-#     return(character(0))
-#   }
-#   result <- character(0)
-#   for (child_name in names(node)) {
-#     result <- c(result, child_name, get_all_descendants_nested(node[[child_name]]))
-#   }
-#   result
-# }
-
-
-# #' Get a Node and All Its Descendants (Helper)
-# #'
-# #' A wrapper function that returns the starting node itself along with all of its
-# #' descendants by calling `get_all_descendants_nested`.
-# #'
-# #' @param node_name The name of the starting node (character).
-# #' @param node The full hierarchy tree (nested list) to search within.
-# #' @return A character vector containing the starting node and all its descendants.
-# #' @noRd
-# get_descendants_self <- function(node_name, node) {
-#   descendants <- get_all_descendants_nested(node[[node_name]])
-#   c(node_name,descendants)
-# }
-
-# #' Exclude Specific Descendant Trees from a Parent Node (Helper)
-# #'
-# #' From a given parent node's list of all descendants, this function removes
-# #' one or more specified child nodes and all of their own descendants.
-# #'
-# #' @param parent_node The parent node's sub-tree (a list).
-# #' @param exclude_nodes A character vector of child nodes to exclude.
-# #' @return A character vector of descendants of the parent, with the specified
-# #'   sub-trees removed.
-# #' @noRd
-# exclude_descendants <- function(parent_node, exclude_nodes) {
-#   all_descendants <- get_all_descendants_nested(parent_node)
-#   exclude_all <- unlist(lapply(exclude_nodes, function(n) get_descendants_self(n, parent_node)))
-#   setdiff(all_descendants, exclude_all)
-# }
-
-
-

@@ -8,8 +8,6 @@ build_dendrogram(unit_set)
 }
 \arguments{
 \item{unit_set}{A data frame, typically the \code{unit_set} from a \code{build_hierarchy} result.}
-
-\item{unit_set_hierarchy}{unit_set d}
 }
 \value{
 An object of class 'dendrogram'

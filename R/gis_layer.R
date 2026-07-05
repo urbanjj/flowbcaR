@@ -57,7 +57,7 @@ flowbca_gis_layer <- function(unit_set, unit_gis, join_col = "sourceunit") {
   current_sf <- gis_simple
 
   # --- 3. Optimized Main Loop ---
-  for (i in 1:length(rounds_to_merge)) {
+  for (i in seq_along(rounds_to_merge)) {
     round_val <- rounds_to_merge[i]
     rule_for_round <- merge_rules[merge_rules$round == round_val, ]
 
@@ -103,7 +103,12 @@ flowbca_gis_layer <- function(unit_set, unit_gis, join_col = "sourceunit") {
     message(paste("Processed round:", round_val, "(Step:", i, ")"))
   }
 
-  names(Z) <- c(max(rounds_to_merge, na.rm = TRUE)+1, rounds_to_merge)
+  if (length(rounds_to_merge) > 0) {
+    names(Z) <- c(max(rounds_to_merge, na.rm = TRUE) + 1, rounds_to_merge)
+  } else {
+    # No merges occurred: the single layer is the initial state.
+    names(Z) <- as.character(nrow(gis_simple) + 1)
+  }
 
   return(Z)
 }

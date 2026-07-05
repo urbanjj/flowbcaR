@@ -53,7 +53,7 @@ cluster_set <- function(unit_set){
                                      stringsAsFactors = FALSE)
   rd <- round_set$round
   # Iterate through each merge event by its row index
-  for(i in 1:nrow(round_set)) {
+  for(i in seq_len(nrow(round_set))) {
     merge_info <- round_set[i, ] # Ensures only one merge is processed
     previous_clusters <- cluster_history[[i]]
     new_clusters <- previous_clusters
@@ -170,13 +170,15 @@ calculate_modularity <- function(input_matrix, communities, is_directed = TRUE, 
   # --- Input validation logic end ---
 
   # Original modularity calculation logic
+  # Symmetrization happens here exactly once, so CalcModMatrix is called with
+  # is_directed = TRUE to avoid symmetrizing the matrix a second time.
   if (is_directed == TRUE) {
     mat <- as.matrix(input_matrix)
   } else {
     mat <- as.matrix(input_matrix) + t(as.matrix(input_matrix))
   }
-  
-  M_matrix <- CalcModMatrix(input_matrix=mat, is_directed = is_directed, resolution = resolution)
+
+  M_matrix <- CalcModMatrix(input_matrix = mat, is_directed = TRUE, resolution = resolution)
 
   total_weight <- sum(mat)
   

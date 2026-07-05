@@ -15,18 +15,19 @@
 #'   4: Undirected absolute flows
 #' @param q A numeric flow threshold (can be relative or absolute) that will
 #'   adjust the default stopping criterion. The algorithm stops if the maximum
-#'   flow for merging is below this value. Defaults to 0.
+#'   flow for merging is below this value. Defaults to NULL (not used).
 #' @param k An integer specifying the desired number of distinct clusters. The
-#'   algorithm stops when this number of clusters is reached. Defaults to 1.
+#'   algorithm stops when this number of clusters is reached. Defaults to NULL;
+#'   if no stopping condition is specified at all, `k = 1` is used.
 #' @param la A numeric value for the average of the internal relative flows of all
 #'   clusters. The algorithm terminates if the calculated average (La) exceeds
-#'   this value. Defaults to 1.1 (effectively off).
+#'   this value. Defaults to NULL (not used).
 #' @param lw A numeric value for the weighted average of the internal relative flows
 #'   of all clusters. The algorithm terminates if the calculated weighted average
-#'   (Lw) exceeds this value. Defaults to 1.1 (effectively off).
+#'   (Lw) exceeds this value. Defaults to NULL (not used).
 #' @param lm A numeric value for the minimum internal relative flow. The algorithm
 #'   terminates if the calculated minimum (Lm) exceeds this value. Defaults to
-#'   1.1 (effectively off).
+#'   NULL (not used).
 #' @param smaller A numeric value between 0 and 1. If the destination unit's
 #'   inter-flow is smaller than the source unit's inter-flow multiplied by this
 #'   ratio, the merge is stopped. Defaults to NULL (off). 
@@ -36,6 +37,11 @@
 #'   source units have non-zero inter-flows. Defaults to FALSE.
 #' @param save_k Specifies whether to return the F_matrix and C_matrix for all
 #'   iterations. Defaults to FALSE.
+#'
+#' @details Only one stopping condition (`q`, `k`, `la`, `lw`, `lm`, `smaller`,
+#'   or `non_zero`) can be specified at a time; specifying more than one is an
+#'   error. When none is specified, the algorithm runs until a single cluster
+#'   remains (`k = 1`).
 #'
 #' @return A list containing:
 #'   - `unit_set`: Details of cluster assignment for each unit.
@@ -57,6 +63,10 @@ flowbca <- function(flow_input, opt_f = 1, q = NULL, k = NULL, la = NULL, lw = N
   # Set default values if no stop condition is provided
   if (sum(stop_conditions) == 0) {
     k <- 1
+  }
+
+  if (!is.null(smaller) && (smaller < 0 || smaller > 1)) {
+    stop("'smaller' must be between 0 and 1.")
   }
 
   # --- 1. Initial Setup ---
@@ -152,9 +162,12 @@ flowbca <- function(flow_input, opt_f = 1, q = NULL, k = NULL, la = NULL, lw = N
       cand_r <- sort(unique(indices[, "row"]))
       cand_s <- sort(unique(indices[, "col"]))
       
-      # Use directed flows for tie-breaking in undirected cases
+      # Use directed flows for tie-breaking in undirected cases.
+      # The diagonal (internal flows) is zeroed, not set to -Inf: the caveat
+      # logic below sums candidate sub-matrices, and a -Inf diagonal would make
+      # every sum -Inf so the tie-breaking rules could never fire.
       tie_break_matrix <- if (opt_f %in% c(2, 4)) F_matrix else F_prime
-      diag(tie_break_matrix) <- -Inf
+      diag(tie_break_matrix) <- 0
 
       # Caveat 1 & 2: One dimension is unique, the other is not.
       if (length(cand_r) > 1 && length(cand_s) == 1) {
@@ -209,9 +222,6 @@ flowbca <- function(flow_input, opt_f = 1, q = NULL, k = NULL, la = NULL, lw = N
 
     # --- 2z. Check smaller condition ---
     if (!is.null(smaller)) {
-      if (smaller < 0 || smaller > 1) {
-        warning("Warning: 'smaller' should be between 0 and 1.")
-      }
       internal_r <- F_matrix[r_idx, r_idx]
       internal_s <- F_matrix[s_idx, s_idx]
       if (internal_s < internal_r * smaller) {
@@ -248,10 +258,10 @@ flowbca <- function(flow_input, opt_f = 1, q = NULL, k = NULL, la = NULL, lw = N
     )
 
     C <- diag(K)
-    C[r_idx, s_idx] <- 1 
-    C <- C[, -r_idx, drop = FALSE] 
-    
-    if (first_try) {
+    C[r_idx, s_idx] <- 1
+    C <- C[, -r_idx, drop = FALSE]
+
+    if (save_k && first_try) {
       F_matrix_history[[1]] <- list(F_matrix)
       first_try <- FALSE
     }
@@ -260,16 +270,18 @@ flowbca <- function(flow_input, opt_f = 1, q = NULL, k = NULL, la = NULL, lw = N
     new_ids <- current_ids[-r_idx]
     rownames(F_matrix) <- colnames(F_matrix) <- new_ids
 
-    C_matrix <- C
-    rownames(C_matrix) <- current_ids
-    colnames(C_matrix) <- new_ids
+    if (save_k) {
+      C_matrix <- C
+      rownames(C_matrix) <- current_ids
+      colnames(C_matrix) <- new_ids
 
-    F_matrix_history[[length(F_matrix_history) + 1]] <- list(
-      F_matrix
-    )
-    C_matrix_history[[length(C_matrix_history) + 1]] <- list(
-      C_matrix
-    )
+      F_matrix_history[[length(F_matrix_history) + 1]] <- list(
+        F_matrix
+      )
+      C_matrix_history[[length(C_matrix_history) + 1]] <- list(
+        C_matrix
+      )
+    }
 
   }
   

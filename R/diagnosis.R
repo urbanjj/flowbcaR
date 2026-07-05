@@ -68,6 +68,14 @@ flowbca_diagnosis <- function(flow_input, is_directed=TRUE, data_name=NULL){
                         flowbca(flow_input,opt_f=3,save_k=TRUE))
         names(dg_data) <- c('relative','absolute')
     } else {
+        # Symmetrize the flow matrix (F + t(F)) so that the input itself
+        # represents an undirected network, as documented. The symmetric input
+        # also makes the downstream (directed) modularity formula equal to the
+        # undirected one.
+        flow_mat <- as.matrix(flow_input[, -1])
+        flow_mat <- flow_mat + t(flow_mat)
+        flow_input <- data.frame(flow_input[, 1, drop = FALSE], flow_mat,
+                                 check.names = FALSE, stringsAsFactors = FALSE)
         dg_data <- list(flowbca(flow_input,opt_f=2,save_k=TRUE),
                         flowbca(flow_input,opt_f=4,save_k=TRUE))
         names(dg_data) <- c('relative','absolute')
@@ -89,7 +97,6 @@ flowbca_diagnosis <- function(flow_input, is_directed=TRUE, data_name=NULL){
     plot_diagnosis(diagnosis_stat, 'intra_flow_ratio')
     plot_diagnosis(diagnosis_stat, 'modularity')
     mtext(paste0("Diagnosis: ", data_name), outer=TRUE, cex=1.5, line=0)
-    
+
     invisible(diagnosis_stat)
-    return(diagnosis_stat)
 }

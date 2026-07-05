@@ -30,22 +30,23 @@ columns must be in the same order as the source unit rows.}
 
 \item{q}{A numeric flow threshold (can be relative or absolute) that will
 adjust the default stopping criterion. The algorithm stops if the maximum
-flow for merging is below this value. Defaults to 0.}
+flow for merging is below this value. Defaults to NULL (not used).}
 
 \item{k}{An integer specifying the desired number of distinct clusters. The
-algorithm stops when this number of clusters is reached. Defaults to 1.}
+algorithm stops when this number of clusters is reached. Defaults to NULL;
+if no stopping condition is specified at all, \code{k = 1} is used.}
 
 \item{la}{A numeric value for the average of the internal relative flows of all
 clusters. The algorithm terminates if the calculated average (La) exceeds
-this value. Defaults to 1.1 (effectively off).}
+this value. Defaults to NULL (not used).}
 
 \item{lw}{A numeric value for the weighted average of the internal relative flows
 of all clusters. The algorithm terminates if the calculated weighted average
-(Lw) exceeds this value. Defaults to 1.1 (effectively off).}
+(Lw) exceeds this value. Defaults to NULL (not used).}
 
 \item{lm}{A numeric value for the minimum internal relative flow. The algorithm
 terminates if the calculated minimum (Lm) exceeds this value. Defaults to
-1.1 (effectively off).}
+NULL (not used).}
 
 \item{smaller}{A numeric value between 0 and 1. If the destination unit's
 inter-flow is smaller than the source unit's inter-flow multiplied by this
@@ -74,4 +75,10 @@ This function is an R translation of the flowbca.ado Stata package
 by Jordy Meekes (2018). It implements a hierarchical clustering algorithm
 for flow data, including the detailed tie-breaking rules from the original
 Mata implementation.
+}
+\details{
+Only one stopping condition (\code{q}, \code{k}, \code{la}, \code{lw}, \code{lm}, \code{smaller},
+or \code{non_zero}) can be specified at a time; specifying more than one is an
+error. When none is specified, the algorithm runs until a single cluster
+remains (\code{k = 1}).
 }

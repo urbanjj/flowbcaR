@@ -41,10 +41,13 @@ flowbca_ani <- function(flowbca_gis_layer, unit_set, width = 1000,
   # --- Initial Setup ---
   unit_set$round <- as.character(unit_set$round)
   round_names <- names(flowbca_gis_layer)
+  if (length(round_names) < 2) {
+    stop("'flowbca_gis_layer' must contain at least two rounds to animate.")
+  }
   gis_base <- flowbca_gis_layer[[1]]
   sourceunit <- gis_base$sourceunit
 
-  g_colour <- sample(colors(), length(sourceunit))
+  g_colour <- sample(colors(), length(sourceunit), replace = length(sourceunit) > length(colors()))
   col_db <- data.frame(sourceunit, g_colour)
   gis_png <- lapply(flowbca_gis_layer, \(x) merge(x, col_db, by = 'sourceunit', all.x = TRUE))
 
@@ -59,7 +62,6 @@ flowbca_ani <- function(flowbca_gis_layer, unit_set, width = 1000,
   png_width <- width
   png_height <- round(png_width * aspect_ratio)
 
-  # --- Dynamic Scaling Setup ---
   # --- Dynamic Scaling Setup ---
   cex_scaler <- width / 1000
   lwd_scaler <- 0.0005 * width + 0.5
@@ -91,13 +93,13 @@ flowbca_ani <- function(flowbca_gis_layer, unit_set, width = 1000,
     }
     
     par(mar = c(0, 0, 0, 0))
-    plot(g_png$geom, col = g_png$g_colour, lwd = 1)
+    plot(sf::st_geometry(g_png), col = g_png$g_colour, lwd = 1)
     text(x = bbox[1], y = bbox[4], labels = paste0('round: ', j), adj = 0, cex = 3 * cex_scaler, col = "blue")
     text(x = bbox[1], y = bbox[4] * 0.99, labels = bquote(.(g_title$sourceunit) %->% .(g_title$destinationunit)), adj = 0, cex = 3 * cex_scaler, col = "blue")
-    plot(gis_base$geom, col = NA, border = 'grey50', lwd = 0.5 * lwd_scaler, add = TRUE)
-    plot(g_png$geom, col = NA, lwd = 1.5 * lwd_scaler, add = TRUE)
-    plot(g_png_attention$geom, col=NA, lwd= 2.5 * lwd_scaler, border = 'red', add = TRUE)
-    points(g_center$geom, type = 'p', pch = 17, col = 'blue', cex = 2 * cex_scaler)
+    plot(sf::st_geometry(gis_base), col = NA, border = 'grey50', lwd = 0.5 * lwd_scaler, add = TRUE)
+    plot(sf::st_geometry(g_png), col = NA, lwd = 1.5 * lwd_scaler, add = TRUE)
+    plot(sf::st_geometry(g_png_attention), col = NA, lwd = 2.5 * lwd_scaler, border = 'red', add = TRUE)
+    points(sf::st_coordinates(g_center), type = 'p', pch = 17, col = 'blue', cex = 2 * cex_scaler)
     dev.off()
     
     return(NULL)
@@ -105,7 +107,7 @@ flowbca_ani <- function(flowbca_gis_layer, unit_set, width = 1000,
 
   # --- Execute Frame Generation (Sequentially) ---
   message("Generating frames sequentially.")
-  lapply(2:length(round_names), generate_frame)
+  lapply(seq_along(round_names)[-1], generate_frame)
   
   # --- GIF Animation ---
   frame_files <- list.files(frame_dir, full.names = TRUE, pattern = "\\.png$")

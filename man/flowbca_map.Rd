@@ -19,8 +19,8 @@ flowbca_map(
 
 \item{join_col}{Specifies the join key columns.}
 
-\item{file_nm}{The file name for the output GIF. "The default value is set to
-the name of unit_set, but the user can specify it (e.g., flowbca_map.png)."}
+\item{file_nm}{The file name for the output PNG. The default value is set to
+the name of unit_set, but the user can specify it (e.g., flowbca_map.png).}
 
 \item{width}{The width of the output image in pixels.}
 }
