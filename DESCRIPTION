@@ -10,13 +10,15 @@ RoxygenNote: 7.3.2
 Imports: 
     magick,
     sf
-Suggests: 
+Suggests:
     data.tree,
     ragg,
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
-Depends: 
-    R (>= 3.5)
+Config/testthat/edition: 3
+Depends:
+    R (>= 4.1)
 LazyData: true
 License: GPL (>= 3)

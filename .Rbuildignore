@@ -1,3 +1,4 @@
+^\.claude$
 ^README\.Rmd$
 ^README\.md$
 ^README_cache$

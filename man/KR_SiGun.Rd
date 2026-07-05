@@ -8,8 +8,8 @@
 A simple feature collection (\code{sf}) with 159 features and 2 fields.
 The coordinate reference system is KGD2002 / Unified CS (EPSG: 5179).
 \describe{
-\item{sourceunit}{Unique administrative code for the Si/Gun.}
-\item{sourceunit_nm}{Korean name of the Si/Gun (UTF-8).}
+\item{SiGun_CD}{Unique administrative code for the Si/Gun.}
+\item{SiGun_NM}{Romanized name of the Si/Gun.}
 \item{geom}{The \code{sfc} geometry column (POLYGON/MULTIPOLYGON).}
 }
 }

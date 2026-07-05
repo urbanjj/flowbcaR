@@ -5,6 +5,8 @@
 #' @param diagnosis_data A list containing relative and absolute data.
 #' @param y_var Name of the y-axis variable to plot (one of: 'mean', 'min', 'median', 'max', 'intra_flow_ratio', 'inter_flow_ratio', 'g', 'relative_g').
 #' @return A plot.
+#' @importFrom graphics axis legend lines rect
+#' @importFrom grDevices rgb
 #' @export
 plot_diagnosis <- function(diagnosis_data, y_var) {
   # Extract relative and absolute data
@@ -39,7 +41,7 @@ plot_diagnosis <- function(diagnosis_data, y_var) {
     
   # Add a legend
   legend("topleft",
-         legend = c("Relative", "Absolute", "Significant Modularity (0.3–0.7)"),
+         legend = c("Relative", "Absolute", "Significant Modularity (0.3-0.7)"),
          col = c("blue", "red", rgb(173, 216, 230, maxColorValue = 255)),
          lty = c(1, 1, NA), pch = c(NA, NA, 15),
          pt.cex = 1.2, bty = "n", y.intersp=1.2, cex=0.9)
@@ -58,6 +60,7 @@ plot_diagnosis <- function(diagnosis_data, y_var) {
 #' @param is_directed A logical value indicating whether the graph is directed
 #' @param data_name The name of the data to display in the plot. If NULL, the name of the flow_input object is used.
 #' @return A list containing the diagnosis statistics.
+#' @importFrom graphics mtext par
 #' @export
 flowbca_diagnosis <- function(flow_input, is_directed=TRUE, data_name=NULL){
     if (is.null(data_name)) {
