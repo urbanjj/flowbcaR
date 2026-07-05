@@ -9,7 +9,7 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.path = "man/figures/README-"
 )
-devtools::load_all()
+library(flowbcaR)
 ```
 
 # Introduction to flowbcaR

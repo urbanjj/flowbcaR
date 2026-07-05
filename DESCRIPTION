@@ -6,10 +6,9 @@ Authors@R:
 Description: This package provides an R implementation of the flow-based clustering algorithm originally introduced by Meekes and Hassink (2018), extended and refined by Yun (2025). 
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-Imports: 
-    magick,
-    sf
+Imports:
+    magick (>= 2.8.0),
+    sf (>= 1.0-0)
 Suggests:
     data.tree,
     ragg,
@@ -19,6 +18,7 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Depends:
-    R (>= 4.1)
+    R (>= 4.6)
 LazyData: true
 License: GPL (>= 3)
+Config/roxygen2/version: 8.0.0

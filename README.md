@@ -62,7 +62,7 @@ workflow, where the output of one function serves as the input for the
 next. This allows for a comprehensive analysis, from initial clustering
 to final visualization.
 
-<img src="./man/figures/workflow.svg" width="100%" style="display: block; margin: auto;" />
+<img src="./man/figures/workflow.svg" alt="" width="100%" style="display: block; margin: auto;" />
 
 A typical workflow involves these steps:
 
@@ -107,8 +107,7 @@ unit IDs, and the remaining column names are the corresponding
 destination unit IDs.
 
     library(sf)
-    #> Warning: package 'sf' was built under R version 4.3.3
-    #> Linking to GEOS 3.11.2, GDAL 3.8.2, PROJ 9.3.1; sf_use_s2() is TRUE
+    #> Linking to GEOS 3.14.1, GDAL 3.12.1, PROJ 9.7.1; sf_use_s2() is TRUE
 
     # Load the sample datasets
     data(OD_SiGun)
@@ -282,7 +281,7 @@ the clusters changes.
     # The plot is interactive when the number of points is small (<= 20)
     flowbca_plot(stat_data)
 
-<img src="man/figures/README-stat-plot-example-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-stat-plot-example-1.png" alt="" width="90%" style="display: block; margin: auto;" />
 
 -   **Considerations**
     -   These plots are diagnostic tools. There is no single “correct”
@@ -339,7 +338,7 @@ $$
             xlab="Round", ylab="Modularity", main="Modularity vs. Clustering Step",
             xlim=rev(range(as.integer(modularity_data$round))))
 
-<img src="man/figures/README-modularity-example-1.png" width="60%" style="display: block; margin: auto;" />
+<img src="man/figures/README-modularity-example-1.png" alt="" width="60%" style="display: block; margin: auto;" />
 
 -   **Pros**
     -   Modularity is a widely accepted standard for evaluating
@@ -374,7 +373,7 @@ clustering strategies based on relative and absolute flows side by side.
     #> Stopping: The number of units in the F_matrix is less than k.
     #> Stopping: The number of units in the F_matrix is less than k.
 
-<img src="man/figures/README-diagnosis-example-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-diagnosis-example-1.png" alt="" width="90%" style="display: block; margin: auto;" />
 
     # The function returns the statistics used for plotting
     str(diagnosis_stat)
@@ -461,7 +460,6 @@ and flags which units act as parents.
 <!-- -->
 
     library(data.tree)
-    #> Warning: package 'data.tree' was built under R version 4.3.3
     # Create a pathString for data.tree
     hierarchy_data$pathString <- paste("Korea", hierarchy_data$hierarchy, sep="/")
     tree <- as.Node(hierarchy_data, pathName="pathString")
@@ -575,7 +573,7 @@ available for exploring the cluster structure.
     par(mar = c(9, 4, 3, 1))
     plot(busan_dend, main = "Busan cluster hierarchy")
 
-<img src="man/figures/README-dendrogram-example-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-dendrogram-example-1.png" alt="" width="90%" style="display: block; margin: auto;" />
 
 ### `hierarchy_cluster()`
 
@@ -659,7 +657,7 @@ dissolved clusters at that step.
     plot(gis_layers$`50`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 50")
     plot(gis_layers$`13`["sourceunit"], key.pos = NULL, reset = FALSE, main = "Round 13 (Final)")
 
-<img src="man/figures/README-gis-example-1.png" width="90%" style="display: block; margin: auto;" />
+<img src="man/figures/README-gis-example-1.png" alt="" width="90%" style="display: block; margin: auto;" />
 
 -   **Considerations**
     -   The process can be slow if the polygons are very complex or if
@@ -692,7 +690,7 @@ as a `magick` image together with the underlying `sf` layers.
                               join_col = c('sourceunit' = 'SiGun_NM'),
                               file_nm = 'man/figures/flowbca_map.png', width = 800)
 
-<img src="man/figures/README-map-example-1.png" width="70%" style="display: block; margin: auto;" />
+<img src="man/figures/README-map-example-1.png" alt="" width="70%" style="display: block; margin: auto;" />
 
 
     # The returned list contains the image and the sf layers
@@ -728,7 +726,7 @@ clustering.
         width = 800
     )
 
-<img src="./man/figures/flowbca_clustering.gif" width="80%" style="display: block; margin: auto;" />
+<img src="./man/figures/flowbca_clustering.gif" alt="" width="80%" style="display: block; margin: auto;" />
 
 -   **Pros**
     -   Creates a powerful and intuitive visualization, perfect for
